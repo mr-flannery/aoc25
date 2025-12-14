@@ -102,7 +102,7 @@ func Day3Part2() {
 		for _, idx := range indices {
 			numStr += string(line[idx])
 		}
- 		val, _ := strconv.Atoi(numStr)
+		val, _ := strconv.Atoi(numStr)
 		fmt.Println("For line:", line, "constructed number:", numStr)
 		sum += val
 	}
