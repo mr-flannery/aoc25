@@ -2,7 +2,7 @@ package days
 
 import (
 	"os"
-	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -52,86 +52,82 @@ func Day7Part1() {
 	println(splits)
 }
 
-type Timeline struct {
-	grid [][]string
-	row  int
-	col  int
-}
-
-func deepCopy(original [][]string) [][]string {
-	if original == nil {
-		return nil
+func printGrid(grid [][]int) {
+	for r := range grid {
+		for c := range grid[r] {
+			numString := strconv.Itoa(grid[r][c])
+			if len(numString) < 2 {
+				numString = " " + numString
+			}
+			print(numString)
+		}
+		println()
 	}
-
-	copied := make([][]string, len(original))
-	for i := range original {
-		copied[i] = append([]string(nil), original[i]...)
-	}
-	return copied
 }
 
 func Day7Part2() {
 	content, _ := os.ReadFile("inputs/7.txt")
 
-	rows := [][]string{}
+	stringRows := [][]string{}
 	for _, r := range strings.Split(string(content), "\n") {
-		rows = append(rows, strings.Split(r, ""))
+		stringRows = append(stringRows, strings.Split(r, ""))
+	}
+
+	rows := make([][]int, len(stringRows))
+	for i := range rows {
+		rows[i] = make([]int, len(stringRows[i]))
+	}
+
+	for r := range stringRows {
+		for c := range stringRows[r] {
+			if stringRows[r][c] == "S" {
+				rows[r][c] = -2
+			} else if stringRows[r][c] == "^" {
+				rows[r][c] = -1
+			} else {
+				rows[r][c] = 0
+			}
+		}
 	}
 
 	MAX_ROW_INDEX := len(rows) - 1
 	MAX_COL_INDEX := len(rows[0]) - 1
-	completedTimelines := 0
+	splits := 0
 
-	c := slices.Index(rows[0], "S")
-	rows[1][c] = "|"
-
-	timelines := []Timeline{{
-		grid: rows,
-		row:  1,
-		col:  c,
-	}}
-
-	// this is slow as fuck, implement the reddit thing instead
-	// S becomes -2, ^ becomes -1, the initial beam gets a 1, everything becomes a 0
-	for len(timelines) > 0 {
-		current := timelines[0]
-		timelines = timelines[1:]
-
-		r := current.row
-		c := current.col
-		grid := current.grid
-
-		if r == MAX_ROW_INDEX {
-			completedTimelines++
-		} else {
-			if grid[r+1][c] == "^" {
-				if c > 0 {
-					cpy := deepCopy(grid)
-					cpy[r+1][c-1] = "|"
-					timelines = append(timelines, Timeline{
-						grid: cpy,
-						row:  r + 1,
-						col:  c - 1,
-					})
+	for r := range rows {
+		for c := range rows[r] {
+			if rows[r][c] == -2 {
+				rows[r+1][c] = 1
+			}
+			if r == MAX_ROW_INDEX && rows[r][c] > 0 {
+				splits += rows[r][c]
+			}
+			if rows[r][c] > 0 {
+				if r < MAX_ROW_INDEX {
+					if rows[r+1][c] == -1 {
+						if c > 0 {
+							if rows[r+1][c-1] == -1 {
+								panic("found a splitter in a place where a new beam should go")
+							} else {
+								rows[r+1][c-1] += rows[r][c]
+							}
+						}
+						if c < MAX_COL_INDEX {
+							if rows[r+1][c+1] == -1 {
+								panic("found a splitter in a place where a new beam should go")
+							} else {
+								rows[r+1][c+1] += rows[r][c]
+							}
+						}
+						// printGrid(rows)
+					} else {
+						rows[r+1][c] += rows[r][c]
+						// printGrid(rows)
+					}
 				}
-				if c < MAX_COL_INDEX {
-					cpy := deepCopy(grid)
-					cpy[r+1][c+1] = "|"
-					timelines = append(timelines, Timeline{
-						grid: cpy,
-						row:  r + 1,
-						col:  c + 1,
-					})
-				}
-			} else {
-				grid[r+1][c] = "|"
-				timelines = append(timelines, Timeline{
-					grid: grid,
-					row:  r + 1,
-					col:  c,
-				})
 			}
 		}
 	}
-	println(completedTimelines)
+
+	println(splits)
 }
